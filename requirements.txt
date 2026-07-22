@@ -1,3 +1,2 @@
 rpa-core @ git+https://github.com/currentlib/lattice-rpa-core-sdk.git
-playwright==1.45.0
 requests==2.32.3
