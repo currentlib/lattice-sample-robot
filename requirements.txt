@@ -1,1 +1,1 @@
-# Dependencies installed directly in Dockerfile
+rpa-core @ git+https://github.com/currentlib/lattice-rpa-core-sdk.git
