@@ -1,7 +1,8 @@
 import os
 import sys
+from types import ModuleType
 
-# Pre-register pywin32 DLL search paths for Windows Python virtual environments (.venv)
+# Fix pywin32 DLL search path for virtual environments (.venv)
 if sys.platform == "win32":
     site_pkg = os.path.join(os.path.dirname(os.path.dirname(sys.executable)), "Lib", "site-packages")
     for d in [os.path.join(site_pkg, "win32"), os.path.join(site_pkg, "win32", "lib"), os.path.join(site_pkg, "pywin32_system32")]:
@@ -14,6 +15,13 @@ if sys.platform == "win32":
             os.environ["PATH"] = d + os.pathsep + os.environ.get("PATH", "")
             if d not in sys.path:
                 sys.path.insert(0, d)
+
+# Mock win32ui if C++ MFC runtime DLL is missing on host OS
+try:
+    import win32ui
+except ImportError:
+    win32ui_mock = ModuleType("win32ui")
+    sys.modules["win32ui"] = win32ui_mock
 
 import time
 import subprocess
