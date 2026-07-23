@@ -14,6 +14,9 @@ class InvoicePerformer(BasePerformer):
         if amount > 5000:
             raise BusinessRuleException(f"Invoice amount ${amount} requires manual approval")
 
+        asset = self.get_asset("TestAsset")
+        self.log(f"ASSET VALUE: {asset}")
+
         self.log(f"Invoice #{invoice_num} processed successfully!")
 
     def cleanup(self):
