@@ -1,80 +1,20 @@
 from rpa_core import BasePerformer, BusinessRuleException
-import os
-import requests
-from playwright.sync_api import sync_playwright
-
-BOT_TOKEN = ""
-CHAT_ID = ""
-
-def send_to_telegram(image_path, runner):
-    if not BOT_TOKEN or not CHAT_ID:
-        runner.log("Telegram credentials missing. Skipping upload.")
-        return
-
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-    runner.log("Sending screenshot to Telegram...")
-    
-    with open(image_path, "rb") as image_file:
-        response = requests.post(
-            url,
-            data={"chat_id": CHAT_ID, "caption": f"Search results for: '{SEARCH_QUERY}'"},
-            files={"photo": image_file}
-        )
-    
-    if response.status_code == 200:
-        runner.log("Successfully sent to Telegram!")
-    else:
-        runner.log(f"Failed to send to Telegram: {response.text}")
-
-
 
 class InvoicePerformer(BasePerformer):
-    QUEUE_NAME = "Google Test"
+    QUEUE_NAME = "Invoices"
 
     def setup(self):
         self.log("Initializing robot state and checking assets...")
 
     def process(self, item):
-        SEARCH_QUERY = item.data.get("search")
-        BOT_TOKEN = item.data.get("token")
-        CHAT_ID = item.data.get("chatid")
-        with sync_playwright() as p:
-            self.log("Launching browser...")
-            # Headless is True by default in Playwright, which is perfect for Docker
-            browser = p.chromium.launch()
-            page = browser.new_page()
+        invoice_num = item.data.get("invoice_num")
+        amount = item.data.get("amount", 0)
+        self.log(f"Processing invoice #{invoice_num} for ${amount}")
 
-            self.log("Navigating to Google...")
-            page.goto("https://www.google.com")
+        if amount > 5000:
+            raise BusinessRuleException(f"Invoice amount ${amount} requires manual approval")
 
-            # Handle the European cookie consent banner if it appears
-            try:
-                self.log("Checking for cookie consent...")
-                page.get_by_role("button", name="Accept all").click(timeout=3000)
-            except Exception:
-                pass # No banner appeared, proceed normally
-
-            self.log(f"Typing query: '{SEARCH_QUERY}'...")
-            # Locate the search box (Google uses name="q")
-            search_box = page.locator("[name='q']")
-            search_box.fill(SEARCH_QUERY)
-            
-            # Simulate pressing the Enter key
-            search_box.press("Enter")
-
-            # Wait for the search results page to load
-            self.log("Waiting for results to load...")
-            page.wait_for_load_state("domcontentloaded")
-
-            # Take the screenshot
-            screenshot_path = "/output/search_result.png"
-            page.screenshot(path=screenshot_path)
-            self.log(f"Success! Screenshot saved to {screenshot_path}")
-
-            send_to_telegram(screenshot_path, self)
-
-            browser.close()
-            self.log(f"Invoice #{SEARCH_QUERY} processed successfully!")
+        self.log(f"Invoice #{invoice_num} processed successfully!")
 
     def cleanup(self):
         self.log("Closing robot session.")
