@@ -1,54 +1,61 @@
 import os
-import sys
-import subprocess
+import time
 from rpa_core import BasePerformer, BusinessRuleException
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 class GoogleSearchPerformer(BasePerformer):
     QUEUE_NAME = "Invoices"
 
     def setup(self):
-        self.log("Initializing robot & checking Playwright browser setup...")
-        try:
-            subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
-        except Exception as e:
-            self.log(f"Playwright browser install note: {e}", level="Warning")
+        self.log("Initializing Selenium browser performer...")
 
     def process(self, item):
         query = item.data.get("query") or item.data.get("invoice_num") or "Lattice RPA Automation"
-        self.log(f"Opening browser and searching Google for query: '{query}'")
+        self.log(f"Opening Chrome browser and searching Google for query: '{query}'")
 
         output_dir = os.path.join(os.getcwd(), "screenshots")
         os.makedirs(output_dir, exist_ok=True)
         screenshot_path = os.path.join(output_dir, f"search_{item.item_id}.png")
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
-            page = browser.new_page()
-            page.goto("https://www.google.com", wait_until="domcontentloaded")
-            
-            # Handle potential cookie banner
-            try:
-                page.click("button:has-text('Accept all')", timeout=2000)
-            except Exception:
-                pass
+        # Configure Chrome options for visible interactive VM desktop execution
+        options = webdriver.ChromeOptions()
+        options.add_argument("--start-maximized")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--disable-extensions")
 
-            # Search query
-            search_box = page.query_selector("textarea[name='q']") or page.query_selector("input[name='q']")
-            if search_box:
-                search_box.fill(query)
-                page.keyboard.press("Enter")
-                page.wait_for_timeout(3000)
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+        try:
+            driver.get("https://www.google.com")
+            time.sleep(1)
+
+            # Find Google search input and type query
+            search_box = driver.find_element(By.NAME, "q")
+            search_box.clear()
+            search_box.send_keys(query)
+            search_box.send_keys(Keys.RETURN)
+
+            time.sleep(3)
 
             # Capture screenshot
-            page.screenshot(path=screenshot_path)
-            browser.close()
+            driver.save_screenshot(screenshot_path)
+            self.log(f"Successfully saved search screenshot to: {screenshot_path}")
 
-        self.log(f"Successfully saved screenshot to: {screenshot_path}")
+            # Mark item successful with output payload
+            item.set_successful(output={"screenshot_path": screenshot_path, "query": query})
+        except Exception as e:
+            self.log(f"Error during browser automation: {e}", level="Error")
+            raise
+        finally:
+            driver.quit()
 
-        # Set output on queue item
-        item.set_successful(output={"screenshot_path": screenshot_path, "query": query})
+    def cleanup(self):
+        self.log("Browser automation session closed.")
 
 
 if __name__ == "__main__":
