@@ -75,7 +75,7 @@ class NotepadSelectorPerformer(BasePerformer):
             )
 
             self.log("Typing text directly into UI Automation element...")
-            editor.type_keys(payload_text.replace("\n", "{ENTER}"), with_spaces=True, with_newlines=True)
+            editor.set_text(payload_text)
             time.sleep(1.5)
 
             # 5. Capture screenshot of active screen
