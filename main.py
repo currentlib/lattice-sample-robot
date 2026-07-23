@@ -81,8 +81,8 @@ class NotepadSelectorPerformer(BasePerformer):
             # 5. Capture screenshot of active screen
             self.log("Capturing desktop screenshot...")
             try:
-                # dlg.capture_as_image() uses PrintWindow API which works better in headless/locked sessions
-                img = dlg.capture_as_image()
+                # With tscon restoring the physical console, ImageGrab.grab() captures the full 1080p desktop
+                img = ImageGrab.grab(all_screens=True)
                 img.save(screenshot_path)
                 self.log(f"Successfully saved screenshot to: {screenshot_path}")
             except Exception as e:
