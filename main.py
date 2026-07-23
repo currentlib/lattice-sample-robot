@@ -26,7 +26,7 @@ except ImportError:
 import time
 import subprocess
 from rpa_core import BasePerformer
-from pywinauto import Application
+from pywinauto import Application, Desktop
 from PIL import ImageGrab
 
 
@@ -44,13 +44,15 @@ class NotepadSelectorPerformer(BasePerformer):
         os.makedirs(output_dir, exist_ok=True)
         screenshot_path = os.path.join(output_dir, f"notepad_{item.id}.png")
 
-        # 1. Start Notepad application with UIA backend selector support
-        app = Application(backend="uia").start("notepad.exe")
-        time.sleep(1.5)
+        # 1. Start Notepad process
+        proc = subprocess.Popen(["notepad.exe"])
+        time.sleep(2)  # Wait for Notepad window to render
 
         try:
-            # 2. Select main window using title_re selector
-            dlg = app.window(title_re=".*Notepad.*")
+            # 2. Select main window across desktop using Desktop(backend="uia")
+            self.log("Connecting to Notepad window using Desktop UIA selector...")
+            dlg = Desktop(backend="uia").window(title_re=".*Notepad.*")
+            dlg.wait("visible", timeout=10)
             dlg.set_focus()
 
             # 3. Target text editor element via control_type selector ("Document" or "Edit")
@@ -87,7 +89,7 @@ class NotepadSelectorPerformer(BasePerformer):
             item.set_success(output={
                 "screenshot_path": screenshot_path,
                 "typed_text": text_to_type,
-                "automation_engine": "PyWinAuto (UIA Selectors)"
+                "automation_engine": "PyWinAuto (Desktop UIA Selectors)"
             })
         except Exception as e:
             self.log(f"Error during PyWinAuto automation: {e}", level="Error")
@@ -95,7 +97,7 @@ class NotepadSelectorPerformer(BasePerformer):
         finally:
             # 7. Cleanly close Notepad process
             try:
-                app.kill()
+                proc.terminate()
                 subprocess.run("taskkill /f /im notepad.exe", shell=True, capture_output=True)
             except Exception:
                 pass
