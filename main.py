@@ -1,5 +1,20 @@
 import os
 import sys
+
+# Pre-register pywin32 DLL search paths for Windows Python virtual environments (.venv)
+if sys.platform == "win32":
+    site_pkg = os.path.join(os.path.dirname(os.path.dirname(sys.executable)), "Lib", "site-packages")
+    for d in [os.path.join(site_pkg, "win32"), os.path.join(site_pkg, "win32", "lib"), os.path.join(site_pkg, "pywin32_system32")]:
+        if os.path.isdir(d):
+            if hasattr(os, "add_dll_directory"):
+                try:
+                    os.add_dll_directory(d)
+                except Exception:
+                    pass
+            os.environ["PATH"] = d + os.pathsep + os.environ.get("PATH", "")
+            if d not in sys.path:
+                sys.path.insert(0, d)
+
 import time
 import subprocess
 from rpa_core import BasePerformer
