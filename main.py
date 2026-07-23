@@ -1,34 +1,43 @@
 import os
 import time
-from rpa_core import BasePerformer, BusinessRuleException
+from rpa_core import BasePerformer
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 
 class GoogleSearchPerformer(BasePerformer):
     QUEUE_NAME = "Invoices"
 
     def setup(self):
-        self.log("Initializing Selenium browser performer...")
+        self.log("Initializing browser performer (Chrome / Edge)...")
+
+    def _get_driver(self):
+        # Try Chrome first, fallback to pre-installed Microsoft Edge
+        try:
+            options = webdriver.ChromeOptions()
+            options.add_argument("--start-maximized")
+            options.add_argument("--disable-infobars")
+            return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+        except Exception as e:
+            self.log(f"Chrome not available ({e}), falling back to Microsoft Edge...", level="Warning")
+            options = webdriver.EdgeOptions()
+            options.add_argument("--start-maximized")
+            return webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
 
     def process(self, item):
         query = item.data.get("query") or item.data.get("invoice_num") or "Lattice RPA Automation"
-        self.log(f"Opening Chrome browser and searching Google for query: '{query}'")
+        self.log(f"Opening browser and searching Google for query: '{query}'")
 
         output_dir = os.path.join(os.getcwd(), "screenshots")
         os.makedirs(output_dir, exist_ok=True)
         screenshot_path = os.path.join(output_dir, f"search_{item.id}.png")
 
-        # Configure Chrome options for visible interactive VM desktop execution
-        options = webdriver.ChromeOptions()
-        options.add_argument("--start-maximized")
-        options.add_argument("--disable-infobars")
-        options.add_argument("--disable-extensions")
-
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        driver = self._get_driver()
 
         try:
             driver.get("https://www.google.com")
