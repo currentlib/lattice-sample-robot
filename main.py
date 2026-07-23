@@ -1,77 +1,86 @@
 import os
+import sys
 import time
+import subprocess
 from rpa_core import BasePerformer
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.edge.service import Service as EdgeService
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from pywinauto import Application
+from PIL import ImageGrab
 
 
-class GoogleSearchPerformer(BasePerformer):
+class NotepadSelectorPerformer(BasePerformer):
     QUEUE_NAME = "Invoices"
 
     def setup(self):
-        self.log("Initializing browser performer (Chrome / Edge)...")
-
-    def _get_driver(self):
-        # Try Chrome first, fallback to pre-installed Microsoft Edge
-        try:
-            options = webdriver.ChromeOptions()
-            options.add_argument("--start-maximized")
-            options.add_argument("--disable-infobars")
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option("useAutomationExtension", False)
-            return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-        except Exception as e:
-            self.log(f"Chrome not available ({e}), falling back to Microsoft Edge...", level="Warning")
-            options = webdriver.EdgeOptions()
-            options.add_argument("--start-maximized")
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            return webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
+        self.log("Initializing PyWinAuto UI Automation Performer...")
 
     def process(self, item):
-        query = item.data.get("query") or item.data.get("invoice_num") or "Lattice RPA Automation"
-        self.log(f"Opening browser and searching DuckDuckGo/Google for query: '{query}'")
+        text_to_type = item.data.get("text") or item.data.get("query") or item.data.get("invoice_num") or "Hello from Lattice PyWinAuto Selector Automation!"
+        self.log(f"Starting Notepad PyWinAuto automation for item '{item.id}' with text: '{text_to_type}'")
 
         output_dir = os.path.join(os.getcwd(), "screenshots")
         os.makedirs(output_dir, exist_ok=True)
-        screenshot_path = os.path.join(output_dir, f"search_{item.id}.png")
+        screenshot_path = os.path.join(output_dir, f"notepad_{item.id}.png")
 
-        driver = self._get_driver()
+        # 1. Start Notepad application with UIA backend selector support
+        app = Application(backend="uia").start("notepad.exe")
+        time.sleep(1.5)
 
         try:
-            # Use DuckDuckGo to avoid bot reCAPTCHA blocking during automated testing
-            driver.get("https://html.duckduckgo.com/html/")
-            time.sleep(1)
+            # 2. Select main window using title_re selector
+            dlg = app.window(title_re=".*Notepad.*")
+            dlg.set_focus()
 
-            # Find search input and type query
-            search_box = driver.find_element(By.NAME, "q")
-            search_box.clear()
-            search_box.send_keys(query)
-            search_box.send_keys(Keys.RETURN)
+            # 3. Target text editor element via control_type selector ("Document" or "Edit")
+            self.log("Targeting Notepad text element via UIA selectors...")
+            try:
+                editor = dlg.child_window(control_type="Document")
+                editor.wait("visible", timeout=3)
+            except Exception:
+                editor = dlg.child_window(control_type="Edit")
+                editor.wait("visible", timeout=3)
 
-            time.sleep(3)
+            # 4. Type formatted payload text into targeted selector element
+            payload_text = (
+                f"=== LATTICE RPA PYWINAUTO SELECTOR AUTOMATION ===\n\n"
+                f"Queue Item ID : {item.id}\n"
+                f"Reference     : {item.reference}\n"
+                f"Text Payload  : {text_to_type}\n"
+                f"Timestamp     : {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                f"UI Selector Status: SUCCESSFUL!\n"
+            )
 
-            # Capture screenshot
-            driver.save_screenshot(screenshot_path)
-            self.log(f"Successfully saved search screenshot to: {screenshot_path}")
+            self.log("Typing text directly into UI Automation element...")
+            editor.type_keys(payload_text.replace("\n", "{ENTER}"), with_spaces=True, with_newlines=True)
+            time.sleep(1.5)
 
-            # Mark item successful with output payload
-            item.set_success(output={"screenshot_path": screenshot_path, "query": query})
+            # 5. Capture screenshot of active screen
+            self.log("Capturing desktop screenshot...")
+            img = ImageGrab.grab()
+            img.save(screenshot_path)
+
+            self.log(f"Successfully saved screenshot to: {screenshot_path}")
+
+            # 6. Mark transaction as successful with screenshot payload
+            item.set_success(output={
+                "screenshot_path": screenshot_path,
+                "typed_text": text_to_type,
+                "automation_engine": "PyWinAuto (UIA Selectors)"
+            })
         except Exception as e:
-            self.log(f"Error during browser automation: {e}", level="Error")
+            self.log(f"Error during PyWinAuto automation: {e}", level="Error")
             raise
         finally:
-            driver.quit()
+            # 7. Cleanly close Notepad process
+            try:
+                app.kill()
+                subprocess.run("taskkill /f /im notepad.exe", shell=True, capture_output=True)
+            except Exception:
+                pass
 
     def cleanup(self):
-        self.log("Browser automation session closed.")
+        self.log("PyWinAuto automation session completed.")
 
 
 if __name__ == "__main__":
-    robot = GoogleSearchPerformer()
+    robot = NotepadSelectorPerformer()
     robot.run()
