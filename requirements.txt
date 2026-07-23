@@ -1,1 +1,1 @@
-rpa-core @ git+https://github.com/currentlib/lattice-rpa-core-sdk.git@main
+rpa-core @ git+https://github.com/currentlib/lattice-rpa-core-sdk.git@v0.3.1
