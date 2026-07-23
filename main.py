@@ -80,10 +80,14 @@ class NotepadSelectorPerformer(BasePerformer):
 
             # 5. Capture screenshot of active screen
             self.log("Capturing desktop screenshot...")
-            img = ImageGrab.grab()
-            img.save(screenshot_path)
-
-            self.log(f"Successfully saved screenshot to: {screenshot_path}")
+            try:
+                # dlg.capture_as_image() uses PrintWindow API which works better in headless/locked sessions
+                img = dlg.capture_as_image()
+                img.save(screenshot_path)
+                self.log(f"Successfully saved screenshot to: {screenshot_path}")
+            except Exception as e:
+                self.log(f"Failed to capture screenshot (locked/headless session): {e}", level="Warning")
+                screenshot_path = ""
 
             # 6. Mark transaction as successful with screenshot payload
             item.set_success(output={
