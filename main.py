@@ -20,7 +20,7 @@ class GoogleSearchPerformer(BasePerformer):
 
         output_dir = os.path.join(os.getcwd(), "screenshots")
         os.makedirs(output_dir, exist_ok=True)
-        screenshot_path = os.path.join(output_dir, f"search_{item.item_id}.png")
+        screenshot_path = os.path.join(output_dir, f"search_{item.id}.png")
 
         # Configure Chrome options for visible interactive VM desktop execution
         options = webdriver.ChromeOptions()
@@ -47,7 +47,7 @@ class GoogleSearchPerformer(BasePerformer):
             self.log(f"Successfully saved search screenshot to: {screenshot_path}")
 
             # Mark item successful with output payload
-            item.set_successful(output={"screenshot_path": screenshot_path, "query": query})
+            item.set_success(output={"screenshot_path": screenshot_path, "query": query})
         except Exception as e:
             self.log(f"Error during browser automation: {e}", level="Error")
             raise
