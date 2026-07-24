@@ -35,6 +35,18 @@ class NotepadSelectorPerformer(BasePerformer):
 
     def setup(self):
         self.log("Initializing PyWinAuto UI Automation Performer...")
+        self.log("Testing assets...")
+        self.assetText = self.get_asset("AssetText")
+        self.log(f"Asset loaded successfully: {self.assetText}")
+        self.assetNumber = self.get_asset_int("AssetNumber")
+        self.log(f"Asset loaded successfully: {self.assetNumber}")
+        self.assetBoolean = self.get_asset_bool("AssetBool")
+        self.log(f"Asset loaded successfully: {self.assetBoolean}")
+        self.assetJson = self.get_asset_json("AssetJson")
+        self.log(f"Asset loaded successfully: {self.assetJson["key2"]}")
+        self.assetCredential = self.get_credential("AssetCredential")
+        self.log(f"Asset loaded successfully: {self.assetCredential}")
+        
 
     def process(self, item):
         text_to_type = item.data.get("text") or item.data.get("query") or item.data.get("invoice_num") or "Hello from Lattice PyWinAuto Selector Automation!"
