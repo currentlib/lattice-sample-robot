@@ -43,7 +43,7 @@ class NotepadSelectorPerformer(BasePerformer):
         self.assetBoolean = self.get_asset_bool("AssetBool")
         self.log(f"Asset loaded successfully: {self.assetBoolean}")
         self.assetJson = self.get_asset_json("AssetJson")
-        self.log(f"Asset loaded successfully: {self.assetJson["key2"]}")
+        self.log(f"Asset loaded successfully: {self.assetJson['key2']}")
         self.assetCredential = self.get_credential("AssetCredential")
         self.log(f"Asset loaded successfully: {self.assetCredential}")
         
