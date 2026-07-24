@@ -53,6 +53,7 @@ class NotepadSelectorPerformer(BasePerformer):
             self.log("Connecting to Notepad window using Desktop UIA selector...")
             dlg = Desktop(backend="uia").window(title_re=".*Notepad.*")
             dlg.wait("visible", timeout=10)
+            dlg.maximize()
             dlg.set_focus()
 
             # 3. Target text editor element via control_type selector ("Document" or "Edit")
