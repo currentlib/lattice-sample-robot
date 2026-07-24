@@ -1,4 +1,4 @@
-rpa-core @ git+https://github.com/currentlib/lattice-rpa-core-sdk.git@v0.4.0
+rpa-core @ git+https://github.com/currentlib/lattice-rpa-core-sdk.git@v0.4.1
 pywin32>=306
 pywinauto>=0.6.8
 Pillow>=10.0.0
