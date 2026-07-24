@@ -89,6 +89,19 @@ class NotepadSelectorPerformer(BasePerformer):
                 self.log(f"Failed to capture screenshot (locked/headless session): {e}", level="Warning")
                 screenshot_path = ""
 
+            # Try to send a notification if a connection named "TelegramNotifier" is set up
+            try:
+                self.log("Attempting to send Telegram notification with screenshot...")
+                self.send_notification(
+                    connection_name="TelegramNotifier",
+                    title=f"New Invoice Processed - {item.id[:8]}",
+                    message=f"Successfully processed invoice reference: {item.reference}\n\nStatus: UI Automation Completed",
+                    attachment_file_path=screenshot_path if screenshot_path else None
+                )
+                self.log("Telegram notification sent successfully.")
+            except Exception as e:
+                self.log(f"Failed to send Telegram notification: {e}", level="Warning")
+
             # 6. Mark transaction as successful with screenshot payload
             item.set_success(output={
                 "screenshot_path": screenshot_path,
